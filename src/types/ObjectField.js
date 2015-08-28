@@ -26,7 +26,13 @@ var ObjectField = React.createClass({
 	},
 
 	defaultValue: {},
-
+	componentWillReceiveProps: function(nextProps) {
+		if (this.props.fields !== nextProps.fields) {
+			this.setState({
+				fields: assign({}, props.settings && props.settings.fields || {})
+			});
+		}
+	},
 	render: function(){
 		var me = this,
 			settings = this.props.settings,
