@@ -90,7 +90,7 @@ module.exports = {
 	 */
 	checkEditingSetting: function( key ){
 		var fields = this.state.fields;
-		if( fields[ key ] && fields[ key ].settings.focus === true ){
+		if( fields[ key ] && fields[key].settings && fields[ key ].settings.focus === true ){
 			fields = assign({}, fields);
 			fields[key].settings.focus = false;
 			this.setState( {fields: fields} );
