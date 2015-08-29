@@ -27,9 +27,9 @@ var ObjectField = React.createClass({
 
 	defaultValue: {},
 	componentWillReceiveProps: function(nextProps) {
-		if (this.props.fields !== nextProps.fields) {
+		if (this.props.settings.fields !== nextProps.settings.fields) {
 			this.setState({
-				fields: assign({}, props.settings && props.settings.fields || {})
+				fields: assign({}, nextProps.settings && nextProps.settings.fields || {})
 			});
 		}
 	},
