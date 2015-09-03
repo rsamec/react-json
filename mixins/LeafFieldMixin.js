@@ -32,7 +32,7 @@ module.exports = {
 		if( this.getDisplayModeString )
 			return this.getDisplayModeString();
 
-		if( this.props.value === '' )
+		if( this.isEmpty() )
 			return React.DOM.span( {className: 'jsonNovalue'}, 'No value' );
 
 		return this.props.value;
@@ -89,5 +89,10 @@ module.exports = {
 		var node = this.refs.input.getDOMNode();
 		node.focus();
 		node.value = node.value;
-	}
+	},
+
+	isEmpty:function(){
+		return this.props.value === undefined || this.props.value === '';
+	},
+
 };

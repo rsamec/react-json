@@ -5,7 +5,31 @@ var React = require('react'),
 	Validation = require('./validation'),
 	TypeField = require('./TypeField')
 ;
+var clearObjProps = function (obj) {
+	for(var k in obj) {
+		if(typeof obj[k] == "object"
+			&& obj[k] !== null
+			&& !(obj[k] instanceof Array)
+			&& !(obj[k] instanceof String)
+			&& !(obj[k] instanceof Number)) {
 
+			clearObjProps(obj[k]);
+			continue;
+		}
+
+		switch(typeof obj[k]) {
+			case 'undefined':
+			case 'boolean':
+			case 'string':
+			case 'number':
+				obj[k] = undefined;
+				break;
+			default:
+				obj[k] = [];
+		}
+	}
+	return  obj;
+}
 /**
  * Field component that represent each Array element or Object field.
  * @param  {string} name The key of the attribute in the parent.
@@ -35,7 +59,7 @@ var Field = React.createClass({
 		if( type == 'react' )
 			return this.renderReactField( definition );
 
-		typeField = this.renderTypeField( type, id );
+		typeField = [this.renderTypeField( type, id )];
 
 		className += ' ' + type + 'Field';
 
@@ -53,6 +77,14 @@ var Field = React.createClass({
 		}
 		else{
 			jsonName.unshift( React.DOM.a({ key:'a', href: '#', className: 'jsonRemove', onClick: this.handleRemove}, 'x') );
+		}
+
+		if( false){
+			// If the field cannot be removed, add a placeholder to maintain the design
+			typeField.unshift( React.DOM.span({ key:'f', className: 'jsonFixed' }) );
+		}
+		else{
+			typeField.unshift( React.DOM.a({ key:'a', href: '#', className: 'jsonReset', onClick: this.handleReset}, 'x') );
 		}
 
 		return React.DOM.div({className: className}, [
@@ -89,6 +121,14 @@ var Field = React.createClass({
 
 	handleRemove: function( e ){
 		this.props.onDeleted( this.props.name );
+	},
+	handleReset: function( e ){
+		var definition = this.props.definition || {},type = definition.type || TypeField.prototype.guessType( this.props.value );
+		if (type === 'object') {
+			this.onUpdated(clearObjProps(this.props.value.toJS()));
+		}else{
+			this.onUpdated(undefined);
+		}
 	},
 
 	shouldComponentUpdate: function( nextProps, nextState ){
@@ -151,6 +191,7 @@ var Field = React.createClass({
 
 		return childErrors;
 	}
+
 });
 
 module.exports = Field;
