@@ -79,7 +79,7 @@ var Field = React.createClass({
 			jsonName.unshift( React.DOM.a({ key:'a', href: '#', className: 'jsonRemove', onClick: this.handleRemove}, 'x') );
 		}
 
-		if( false){
+		if( this.props.value === undefined){
 			// If the field cannot be removed, add a placeholder to maintain the design
 			typeField.unshift( React.DOM.span({ key:'f', className: 'jsonFixed' }) );
 		}
