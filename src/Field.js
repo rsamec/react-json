@@ -4,7 +4,9 @@ var React = require('react'),
 	objectAssign = require('object-assign'),
 	Validation = require('./validation'),
 	TypeField = require('./TypeField')
+
 ;
+
 var clearObjProps = function (obj) {
 	for(var k in obj) {
 		if(typeof obj[k] == "object"
@@ -49,6 +51,7 @@ var Field = React.createClass({
 	},
 	render: function(){
 		var definition = this.props.definition || {},
+				binding = this.props.binding,
 			className = 'jsonField',
 			type = definition.type || TypeField.prototype.guessType( this.props.value ),
 			id = this.props.id + '_' + this.props.name,
@@ -56,11 +59,18 @@ var Field = React.createClass({
 			typeField
 		;
 
+
+
 		if( type == 'react' )
 			return this.renderReactField( definition );
 
-		typeField = [this.renderTypeField( type, id )];
-
+		if (this.useBinding() && binding !== undefined) {
+			//render Object with binding
+			typeField = [this.renderBindingField(id)];
+		}
+		else{
+			typeField = [this.renderTypeField(type, id)];
+		}
 		className += ' ' + type + 'Field';
 
 		if( this.state.error ){
@@ -79,13 +89,19 @@ var Field = React.createClass({
 			jsonName.unshift( React.DOM.a({ key:'a', href: '#', className: 'jsonRemove', onClick: this.handleRemove}, 'x') );
 		}
 
-		if( this.props.value === undefined){
+		if(this.useBinding() && binding === undefined){
+			typeField.unshift( React.DOM.a({ key:'b', className: 'jsonBind', onClick: this.handleAddBinding}, '=') );
+		}
+
+		if(this.props.value === undefined && !(this.useBinding() && binding !== undefined) ){
 			// If the field cannot be removed, add a placeholder to maintain the design
 			typeField.unshift( React.DOM.span({ key:'f', className: 'jsonFixed' }) );
 		}
 		else{
-			typeField.unshift( React.DOM.a({ key:'a', href: '#', className: 'jsonReset', onClick: this.handleReset}, 'x') );
+			typeField.unshift( React.DOM.a({ key:'r', className: 'jsonReset', onClick: this.handleReset}, 'x') );
 		}
+
+
 
 		return React.DOM.div({className: className}, [
 			React.DOM.span( {className: 'jsonName', key: 'n'}, jsonName ),
@@ -93,7 +109,9 @@ var Field = React.createClass({
 			error
 		]);
 	},
-
+    useBinding:function(){
+		return this.props.parentSettings && this.props.parentSettings.useBinding;
+	},
 	renderTypeField: function( type, id ){
 		var definition = this.props.definition,
 			settings = objectAssign( {}, definition.settings || {} ),
@@ -106,6 +124,7 @@ var Field = React.createClass({
 		component = React.createElement( TypeField, {
 			type: type,
 			value: this.props.value,
+			binding:this.props.binding,
 			settings: settings,
 			onUpdated: this.onUpdated,
 			ref: 'typeField',
@@ -113,6 +132,34 @@ var Field = React.createClass({
 			parentSettings: this.props.parentSettings
 		});
 		return component;
+	},
+	renderBindingField: function(id) {
+
+		return React.createElement(TypeField, {
+			type: 'object',
+			value: this.props.binding,
+			settings: {
+				fields: {
+					path:{type:'string'},
+					mode: {
+						type: 'select', settings: {
+							editing: false,
+							options: ['OneWay', 'TwoWay','OneTime'].map(function (key, value) {
+								return {value: key, label: key};
+							})
+						}
+					},
+					converter: {
+						type: 'codeEditor'
+					},
+					converterArgs:{type:'string'}
+				}
+			},
+			onUpdated: this.onBindingUpdated,
+			ref: 'typeField',
+			id: id,
+			parentSettings: this.props.parentSettings
+		});
 	},
 
 	renderReactField: function( definition ){
@@ -130,18 +177,36 @@ var Field = React.createClass({
 			this.onUpdated(undefined);
 		}
 	},
+	handleAddBinding:function(e){
+		var defaultValues = {
+			path: undefined,
+			converter: undefined,
+			converterArgs:undefined,
+			mode: 'OneWay'
+		};
+		this.onBindingUpdated(defaultValues);
 
-	shouldComponentUpdate: function( nextProps, nextState ){
-		return nextProps.value != this.props.value || nextState.error != this.state.error;
 	},
 
-	onUpdated: function( value ){
-		var definition = this.props.definition;
-		if( this.props.value !== value ){
-			this.props.onUpdated( this.props.name, value );
-			if( definition.onChange )
-				definition.onChange( value, this.props.value );
+	shouldComponentUpdate: function( nextProps, nextState ){
+		return nextProps.value != this.props.value ||  nextProps.binding != this.props.binding  || nextState.error != this.state.error;
+	},
+
+	onUpdated: function( value ) {
+		if (this.useBinding() && this.props.binding !== undefined){
+			this.onBindingUpdated(value);
+			return;
 		}
+		var definition = this.props.definition;
+		if (this.props.value !== value) {
+			this.props.onUpdated(this.props.name, value);
+			if (definition.onChange)
+				definition.onChange(value, this.props.value);
+		}
+
+	},
+	onBindingUpdated: function( value ) {
+		this.props.onBindingUpdated(this.props.name, value);
 	},
 
 	getValidationErrors: function( jsonValue ){

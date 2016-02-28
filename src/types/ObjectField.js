@@ -38,7 +38,7 @@ var ObjectField = React.createClass({
 			settings = this.props.settings,
 			className = this.state.editing || settings.header === false ? 'open jsonObject jsonCompound' : 'jsonObject jsonCompound',
 			openHash = '',
-			definitions = this.state.fields,
+			definitions = this.state.fields, bindings = this.state.bindings,
 			attrs = [],
 			value = assign({}, this.props.value ),
 			fixedFields = this.getFixedFields(),
@@ -70,6 +70,7 @@ var ObjectField = React.createClass({
 	renderField: function( key, fixedFields ){
 		var value = this.props.value[ key ],
 			definition = this.state.fields[ key ] || {},
+			binding = this.props.binding && this.props.binding[ key ],
 			fixed = fixedFields === true || typeof fixedFields == 'object' && fixedFields[ key ]
 		;
 
@@ -84,6 +85,8 @@ var ObjectField = React.createClass({
 			fixed: fixed,
 			id: this.props.id,
 			definition: definition,
+			binding:binding,
+			onBindingUpdated: this.updateBinding,
 			onUpdated: this.updateField,
 			onDeleted: this.deleteField,
 			parentSettings: this.props.settings
@@ -113,6 +116,9 @@ var ObjectField = React.createClass({
 	updateField: function( key, value ){
 		this.checkEditingSetting( key );
 		this.props.value.set( key, value );
+	},
+	updateBinding: function( key, value ){
+		this.props.binding.set( key, value );
 	},
 
 	deleteField: function( key ){

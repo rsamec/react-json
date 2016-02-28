@@ -36,6 +36,7 @@ var Json = React.createClass({
 	getDefaultProps: function(){
 		return {
 			value: {},
+			binding:{},
 			errors: false,
 			updating: false
 		};
@@ -54,6 +55,7 @@ var Json = React.createClass({
 	getInitialState: function(){
 		var me = this,
 			value = this.props.value,
+			binding = this.props.binding,
 			listener
 		;
 
@@ -66,7 +68,9 @@ var Json = React.createClass({
 			if( me.state.updating )
 				return me.setState({ updating: false });
 
+			if (me.state.value === updated) return;
 			me.setState({value: updated});
+
 
 			if( me.state.errors )
 				me.getValidationErrors();
@@ -75,18 +79,39 @@ var Json = React.createClass({
 				me.props.onChange( updated.toJS() );
 		});
 
+
+
+		// If it is a freezer node
+		if( !binding.getListener )
+			binding = new Freezer( binding ).get();
+
+		// Listen to changes
+		binding.getListener().on('update', function( updated ){
+			if (me.state.binding === updated) return;
+
+			me.setState({binding: updated});
+
+
+			if( me.props.onBindingChange )
+				me.props.onBindingChange( updated.toJS() );
+		});
+
 		return {
 			value: value,
+			binding:binding,
 			defaults: this.createDefaults(),
 			id: this.getId()
 		};
 	},
 
 	componentWillReceiveProps: function( newProps ){
-		if( !newProps.value.getListener ){
-			this.setState({updating: true, value: this.state.value.reset( newProps.value )});
+		if( !newProps.value.getListener || !newProps.binding.getListener){
+			this.setState({
+				updating: true,
+				value: this.state.value.reset( newProps.value ),
+				binding: this.state.binding.reset( newProps.binding )
+			});
 		}
-
 		this.setState( {defaults: this.createDefaults()} );
 	},
 
@@ -95,8 +120,10 @@ var Json = React.createClass({
 			ob = React.createElement( TypeField, {
 				type: 'object',
 				value: this.state.value,
+				binding:this.state.binding,
 				settings: objectAssign( {}, this.state.defaults.object, {
 					fields: settings.fields,
+					useBinding: settings.useBinding,
 					editing: this.getFormSetting( settings, 'editing', 'always'),
 					fixedFields: this.getFormSetting( settings, 'fixedFields', true),
 					adder:  this.getFormSetting( settings, 'adder', false),
@@ -116,6 +143,9 @@ var Json = React.createClass({
 
 	getValue: function(){
 		return this.state.value.toJS();
+	},
+	getBinding:function(){
+		return this.state.binding.toJS();
 	},
 
 	getValidationErrors: function(){
